@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.my_requests.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<h4 class="fw-bold mb-4"><i class="bi bi-inbox me-2 text-primary"></i>{{ _('page.my_requests.title') }}</h4>
+
+{% if requests %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('common.disk') }}</th>
+            <th>{{ _('common.type') }}</th>
+            <th>{{ _('page.my_requests.reason') }}</th>
+            <th>{{ _('common.status') }}</th>
+            <th>{{ _('page.my_requests.requested_at') }}</th>
+            <th>{{ _('page.my_requests.resolved_at') }}</th>
+            <th>{{ _('page.my_requests.admin_note') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+          <tr>
+            <td class="ps-3">
+              <a href="{{ url_for('disk_detail', disk_id=req.disk_id) }}" class="fw-semibold text-decoration-none">
+                {{ req.disk.disk_number }}
+              </a>
+              <div class="small text-muted">{{ req.disk.location or '' }}</div>
+            </td>
+            <td>
+              {% if req.request_type == 'return' %}
+                <span class="badge" style="background-color:#fd7e14">{{ _('request_type.return') }}</span>
+              {% else %}
+                <span class="badge bg-primary-subtle text-primary border">{{ _('request_type.manage') }}</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ req.reason or _('common.none') }}</td>
+            <td>
+              {% if req.status == 'pending' %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>{{ _('request_status.pending') }}</span>
+              {% elif req.status == 'approved' %}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>{{ _('request_status.approved') }}</span>
+              {% else %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>{{ _('request_status.rejected') }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="small text-muted">
+              {{ req.resolved_at.strftime('%Y-%m-%d %H:%M') if req.resolved_at else _('common.none') }}
+            </td>
+            <td class="small text-muted">{{ translate_admin_note(req.admin_note) or _('common.none') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+  <h5>{{ _('page.my_requests.empty') }}</h5>
+  <p>{{ _('page.my_requests.empty_hint') }}</p>
+  <a href="{{ url_for('disks') }}" class="btn btn-outline-primary">{{ _('common.browse_disks') }}</a>
+</div>
+{% endif %}
+
+{% endblock %}

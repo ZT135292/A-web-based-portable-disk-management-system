@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.disks.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <h4 class="fw-bold mb-0"><i class="bi bi-hdd me-2 text-primary"></i>{{ _('page.disks.title') }}</h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('export_disks') }}" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-download me-1"></i>{{ _('common.export_csv') }}
+    </a>
+    {% if session.get('role') == 'admin' %}
+    <a href="{{ url_for('add_disk') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>{{ _('nav.add_disk') }}
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-2">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <input type="text" name="q" class="form-control form-control-sm"
+               placeholder="{{ _('page.disks.search_ph') }}" value="{{ q }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">{{ _('page.disks.all_status') }}</option>
+          <option value="active" {{ 'selected' if status=='active' }}>{{ _('status.active') }}</option>
+          <option value="idle" {{ 'selected' if status=='idle' }}>{{ _('status.idle') }}</option>
+          <option value="faulty" {{ 'selected' if status=='faulty' }}>{{ _('status.faulty') }}</option>
+          <option value="maintenance" {{ 'selected' if status=='maintenance' }}>{{ _('status.maintenance') }}</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="dtype" class="form-select form-select-sm">
+          <option value="">{{ _('page.disks.all_types') }}</option>
+          <option value="HDD" {{ 'selected' if dtype=='HDD' }}>HDD</option>
+          <option value="SSD" {{ 'selected' if dtype=='SSD' }}>SSD</option>
+          <option value="NVMe" {{ 'selected' if dtype=='NVMe' }}>NVMe</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="manager_id" class="form-select form-select-sm">
+          <option value="">{{ _('page.disks.all_managers') }}</option>
+          <option value="none" {{ 'selected' if manager_id=='none' }}>{{ _('page.disks.no_manager') }}</option>
+          {% for m in managers %}
+          <option value="{{ m.id }}" {{ 'selected' if manager_id==m.id|string }}>
+            {{ m.display_name or m.username }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="" {{ 'selected' if sort=='' }}>{{ _('page.disks.sort_default') }}</option>
+          <option value="free_desc" {{ 'selected' if sort=='free_desc' }}>{{ _('page.disks.sort_free_desc') }}</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-search me-1"></i>{{ _('common.search') }}
+        </button>
+        <a href="{{ url_for('disks') }}" class="btn btn-outline-secondary btn-sm ms-1">{{ _('common.clear') }}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if disks %}
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+  {% for disk in disks %}
+  <div class="col">
+    <div class="card border-0 shadow-sm h-100 disk-card">
+      <div class="card-header d-flex justify-content-between align-items-center bg-transparent border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-hdd-fill text-primary fs-5"></i>
+          <span class="fw-bold">{{ disk.disk_number }}</span>
+          <span class="badge bg-light text-dark border">{{ disk.disk_type }}</span>
+        </div>
+        <span class="badge {{ status_badge(disk.status) }}">{{ status_label(disk.status) }}</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="text-muted">{{ _('page.disks.usage') }}</span>
+            <span class="fw-semibold
+              {{ 'text-danger' if disk.usage_percent > 90 else 'text-warning' if disk.usage_percent > 70 else 'text-success' }}">
+              {{ disk.usage_percent }}%
+            </span>
+          </div>
+          <div class="progress mb-1" style="height:8px">
+            <div class="progress-bar {{ 'bg-danger' if disk.usage_percent > 90 else 'bg-warning' if disk.usage_percent > 70 else 'bg-success' }}"
+                 style="width:{{ disk.usage_percent }}%"></div>
+          </div>
+          <div class="d-flex justify-content-between small text-muted">
+            <span>{{ _('page.disks.free') }} <strong>{{ "%.1f" | format(disk.free_space_gb) }} GB</strong></span>
+            <span>{{ _('page.disks.total') }} <strong>{{ "%.1f" | format(disk.total_space_gb) }} GB</strong></span>
+          </div>
+        </div>
+
+        <ul class="list-unstyled small mb-0">
+          {% if disk.brand or disk.model_name %}
+          <li class="mb-1">
+            <i class="bi bi-hdd-rack me-2 text-muted"></i>
+            {{ disk.brand or '' }}{% if disk.brand and disk.model_name %} · {% endif %}{{ disk.model_name or '' }}
+          </li>
+          {% endif %}
+          {% if disk.location %}
+          <li class="mb-1">
+            <i class="bi bi-geo-alt me-2 text-muted"></i>{{ disk.location }}
+          </li>
+          {% endif %}
+          {% if disk.serial_number %}
+          <li class="mb-1">
+            <i class="bi bi-upc-scan me-2 text-muted"></i>
+            <span class="text-muted">S/N </span><code>{{ disk.serial_number }}</code>
+          </li>
+          {% endif %}
+          <li class="mb-1">
+            <i class="bi bi-person me-2 text-muted"></i>
+            {% if disk.manager %}
+              <strong>{{ disk.manager.display_name or disk.manager.username }}</strong>
+              {% if disk.management_start %}
+                <span class="text-muted ms-1">{{ _('common.since') }} {{ disk.management_start.strftime('%Y-%m-%d') }}</span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted fst-italic">{{ _('page.disks.no_manager') }}</span>
+            {% endif %}
+          </li>
+          {% if disk.data_entries %}
+          <li>
+            <i class="bi bi-database me-2 text-muted"></i>
+            {{ _('page.disks.data_records', count=disk.data_entries | length) }}
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0">
+        <a href="{{ url_for('disk_detail', disk_id=disk.id) }}"
+           class="btn btn-outline-primary btn-sm w-100">
+          <i class="bi bi-eye me-1"></i>{{ _('common.view_details') }}
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mt-3 text-muted small">{{ _('page.disks.count', count=disks | length) }}</div>
+
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-hdd-rack fs-1 d-block mb-3"></i>
+  <h5>{{ _('page.disks.not_found') }}</h5>
+  <p>{{ _('page.disks.not_found_hint') }}</p>
+</div>
+{% endif %}
+
+{% endblock %}

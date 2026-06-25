@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.admin.edit_disk.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('disks') }}">{{ _('nav.disks') }}</a></li>
+        <li class="breadcrumb-item">
+          <a href="{{ url_for('disk_detail', disk_id=disk.id) }}">{{ disk.disk_number }}</a>
+        </li>
+        <li class="breadcrumb-item active">{{ _('common.edit') }}</li>
+      </ol>
+    </nav>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="fw-bold mb-0"><i class="bi bi-pencil me-2 text-primary"></i>{{ _('page.admin.edit_disk.title') }}</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="row g-3">
+
+            <div class="col-12"><h6 class="text-muted fw-semibold border-bottom pb-2">{{ _('page.admin.add_disk.basic_info') }}</h6></div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.disk_id') }} <span class="text-danger">*</span></label>
+              <input type="text" name="disk_number" class="form-control" required
+                     value="{{ disk.disk_number }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ _('common.type') }}</label>
+              <select name="disk_type" class="form-select">
+                {% for t in ['HDD','SSD','NVMe'] %}
+                <option value="{{ t }}" {{ 'selected' if disk.disk_type==t }}>{{ t }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ _('common.status') }}</label>
+              <select name="status" class="form-select">
+                {% for s in ['active','idle','maintenance','faulty'] %}
+                <option value="{{ s }}" {{ 'selected' if disk.status==s }}>{{ status_label(s) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.total_gb') }}</label>
+              <input type="number" step="0.1" name="total_space_gb" class="form-control"
+                     value="{{ disk.total_space_gb }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.used_gb') }}</label>
+              <input type="number" step="0.1" name="used_space_gb" class="form-control"
+                     value="{{ disk.used_space_gb }}">
+            </div>
+
+            <div class="col-12"><h6 class="text-muted fw-semibold border-bottom pb-2 mt-2">{{ _('page.admin.add_disk.identity') }}</h6></div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('common.brand') }}</label>
+              <input type="text" name="brand" class="form-control"
+                     value="{{ disk.brand or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('common.model') }}</label>
+              <input type="text" name="model_name" class="form-control"
+                     value="{{ disk.model_name or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.sn') }}</label>
+              <input type="text" name="serial_number" class="form-control font-monospace"
+                     value="{{ disk.serial_number or '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.pn') }}</label>
+              <input type="text" name="part_number" class="form-control font-monospace"
+                     value="{{ disk.part_number or '' }}"
+                     placeholder="{{ _('page.admin.add_disk.pn_ph') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.location') }}</label>
+              <input type="text" name="location" class="form-control"
+                     value="{{ disk.location or '' }}"
+                     placeholder="{{ _('page.admin.add_disk.location_ph') }}">
+            </div>
+
+            <div class="col-12"><h6 class="text-muted fw-semibold border-bottom pb-2 mt-2">{{ _('common.notes') }}</h6></div>
+            <div class="col-12">
+              <textarea name="notes" class="form-control" rows="2">{{ disk.notes or '' }}</textarea>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>{{ _('page.admin.edit_disk.save') }}
+            </button>
+            <a href="{{ url_for('disk_detail', disk_id=disk.id) }}" class="btn btn-outline-secondary">{{ _('common.cancel') }}</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,138 @@
+/* ── 全局 ───────────────────────────────────── */
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main.container-fluid {
+  flex: 1;
+}
+
+/* ── 导航栏 ─────────────────────────────────── */
+.navbar {
+  padding: 0.6rem 1.5rem;
+}
+
+.navbar-brand {
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── 统计卡片 ────────────────────────────────── */
+.stat-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.08) !important;
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── 硬盘卡片 ────────────────────────────────── */
+.disk-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+  border-radius: 0.75rem !important;
+}
+
+.disk-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.1) !important;
+}
+
+/* ── 头像圆圈 ────────────────────────────────── */
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.avatar-circle.small {
+  width: 30px;
+  height: 30px;
+  font-size: 0.8rem;
+}
+
+/* ── 进度条 ─────────────────────────────────── */
+.progress {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* ── 卡片通用 ────────────────────────────────── */
+.card {
+  border-radius: 0.75rem !important;
+}
+
+.card-header {
+  border-radius: 0.75rem 0.75rem 0 0 !important;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+/* ── 表格 ───────────────────────────────────── */
+.table > :not(caption) > * > * {
+  padding: 0.65rem 0.75rem;
+}
+
+/* ── Toast 通知 ─────────────────────────────── */
+.toast-container .toast {
+  min-width: 280px;
+}
+
+/* ── 链接 ───────────────────────────────────── */
+a {
+  color: #0d6efd;
+}
+
+/* ── 边框颜色覆盖 ────────────────────────────── */
+.border-start.border-4.border-warning {
+  border-left-color: #ffc107 !important;
+}
+
+/* ── 代码字体 ────────────────────────────────── */
+code {
+  font-size: 0.85em;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+}
+
+/* ── 登录页背景 ─────────────────────────────── */
+.login-bg {
+  background: linear-gradient(135deg, #e3f0ff 0%, #f0e6ff 100%);
+}
+
+/* ── 响应式微调 ─────────────────────────────── */
+@media (max-width: 768px) {
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  main.container-fluid {
+    padding: 1rem !important;
+  }
+}
+
+/* ── 打印优化 ────────────────────────────────── */
+@media print {
+  .navbar, footer, .btn, .toast-container {
+    display: none !important;
+  }
+}

@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+{% block title %}{{ disk.disk_number }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+{% set me = current_user() %}
+{% set is_manager = (disk.manager_id == me.id) %}
+{% set is_admin = (me.role == 'admin') %}
+{% set can_edit = is_manager or is_admin %}
+
+<!-- 面包屑 -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('disks') }}">{{ _('nav.disks') }}</a></li>
+    <li class="breadcrumb-item active">{{ disk.disk_number }}</li>
+  </ol>
+</nav>
+
+<!-- 标题栏 -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">
+      <i class="bi bi-hdd-fill text-primary me-2"></i>{{ disk.disk_number }}
+      <span class="badge bg-light text-dark border ms-2">{{ disk.disk_type }}</span>
+      <span class="badge {{ status_badge(disk.status) }} ms-1">{{ status_label(disk.status) }}</span>
+    </h4>
+    <div class="d-flex flex-wrap gap-3 small text-muted mt-1">
+      {% if disk.brand or disk.model_name %}
+      <span><i class="bi bi-hdd-rack me-1"></i>{{ disk.brand or '' }}{% if disk.brand and disk.model_name %} · {% endif %}{{ disk.model_name or '' }}</span>
+      {% endif %}
+      {% if disk.location %}
+      <span><i class="bi bi-geo-alt me-1"></i>{{ disk.location }}</span>
+      {% endif %}
+      {% if disk.serial_number %}
+      <span><i class="bi bi-upc-scan me-1"></i>S/N: <code>{{ disk.serial_number }}</code></span>
+      {% endif %}
+      {% if disk.part_number %}
+      <span><i class="bi bi-tag me-1"></i>P/N: <code>{{ disk.part_number }}</code></span>
+      {% endif %}
+    </div>
+  </div>
+  {% if is_admin %}
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('edit_disk', disk_id=disk.id) }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>{{ _('common.edit') }}
+    </a>
+    <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+      <i class="bi bi-trash me-1"></i>{{ _('common.delete') }}
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-4">
+  <!-- 左栏：存储 + 管理人 + 申请 -->
+  <div class="col-lg-4">
+
+    <!-- 存储空间卡片 -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2 text-primary"></i>{{ _('page.disk_detail.storage') }}</h6>
+      </div>
+      <div class="card-body">
+        <div class="text-center mb-3">
+          <div class="display-6 fw-bold
+            {{ 'text-danger' if disk.usage_percent > 90 else 'text-warning' if disk.usage_percent > 70 else 'text-success' }}">
+            {{ disk.usage_percent }}%
+          </div>
+          <div class="text-muted small">{{ _('page.disk_detail.usage_rate') }}</div>
+        </div>
+        <div class="progress mb-3" style="height:12px;border-radius:6px">
+          <div class="progress-bar rounded
+            {{ 'bg-danger' if disk.usage_percent > 90 else 'bg-warning' if disk.usage_percent > 70 else 'bg-success' }}"
+               style="width:{{ disk.usage_percent }}%"></div>
+        </div>
+        <div class="row text-center g-2">
+          <div class="col-4">
+            <div class="fw-bold">{{ "%.1f" | format(disk.total_space_gb) }}</div>
+            <div class="text-muted small">{{ _('page.disk_detail.total_gb') }}</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold text-warning">{{ "%.1f" | format(disk.used_space_gb) }}</div>
+            <div class="text-muted small">{{ _('page.disk_detail.used_gb') }}</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold text-success">{{ "%.1f" | format(disk.free_space_gb) }}</div>
+            <div class="text-muted small">{{ _('page.disk_detail.free_gb') }}</div>
+          </div>
+        </div>
+
+        {% if can_edit %}
+        <button class="btn btn-outline-primary btn-sm w-100 mt-3"
+                data-bs-toggle="collapse" data-bs-target="#spaceForm">
+          <i class="bi bi-pencil-square me-1"></i>{{ _('page.disk_detail.update_space') }}
+        </button>
+        <div class="collapse mt-2" id="spaceForm">
+          <form method="POST" action="{{ url_for('update_space', disk_id=disk.id) }}">
+            <div class="mb-2">
+              <label class="form-label small mb-1">{{ _('page.disk_detail.total_capacity_gb') }}</label>
+              <input type="number" step="0.1" name="total_space_gb" class="form-control form-control-sm"
+                     value="{{ disk.total_space_gb }}">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small mb-1">{{ _('page.disk_detail.used_gb_label') }}</label>
+              <input type="number" step="0.1" name="used_space_gb" class="form-control form-control-sm"
+                     value="{{ disk.used_space_gb }}">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100">{{ _('common.save') }}</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 管理人卡片 -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>{{ _('page.disk_detail.manager') }}</h6>
+      </div>
+      <div class="card-body">
+        {% if disk.manager %}
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <div class="avatar-circle bg-primary-subtle text-primary fw-bold">
+            {{ (disk.manager.display_name or disk.manager.username)[0] | upper }}
+          </div>
+          <div>
+            <div class="fw-semibold">{{ disk.manager.display_name or disk.manager.username }}</div>
+            <div class="small text-muted">{{ disk.manager.department or '' }}</div>
+            {% if disk.manager.email %}
+            <div class="small text-muted">{{ disk.manager.email }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% if disk.management_start %}
+        <div class="small text-muted">
+          <i class="bi bi-calendar-check me-1"></i>
+          {{ _('page.disk_detail.mgmt_since', date=format_date(disk.management_start, long=True)) }}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center text-muted py-2">
+          <i class="bi bi-person-slash fs-3 d-block mb-1"></i>
+          <small>{{ _('page.disk_detail.no_manager') }}</small>
+        </div>
+        {% endif %}
+
+        <!-- 申请/退还按钮 -->
+        {% if not is_manager %}
+        <hr class="my-2">
+        {% if pending_my_req %}
+          <div class="alert alert-info py-2 mb-0 small">
+            <i class="bi bi-clock me-1"></i>{{ _('page.disk_detail.pending_request') }}
+          </div>
+        {% else %}
+          <button class="btn btn-success btn-sm w-100" data-bs-toggle="collapse" data-bs-target="#requestForm">
+            <i class="bi bi-hand-index me-1"></i>{{ _('page.disk_detail.request_manage') }}
+          </button>
+          <div class="collapse mt-2" id="requestForm">
+            <form method="POST" action="{{ url_for('request_disk', disk_id=disk.id) }}">
+              <div class="mb-2">
+                <label class="form-label small mb-1">{{ _('page.disk_detail.request_reason') }}</label>
+                <textarea name="reason" class="form-control form-control-sm" rows="3"
+                          placeholder="{{ _('page.disk_detail.request_reason_ph') }}"></textarea>
+              </div>
+              <button type="submit" class="btn btn-success btn-sm w-100">{{ _('page.disk_detail.submit_request') }}</button>
+            </form>
+          </div>
+        {% endif %}
+        {% else %}
+          <div class="alert alert-success py-2 mb-0 small mt-2">
+            <i class="bi bi-check-circle me-1"></i>{{ _('page.disk_detail.you_are_manager') }}
+          </div>
+          <hr class="my-2">
+          {% if pending_return_req %}
+            <div class="alert alert-warning py-2 mb-0 small">
+              <i class="bi bi-clock me-1"></i>{{ _('page.disk_detail.pending_return') }}
+            </div>
+          {% else %}
+            <button class="btn btn-outline-warning btn-sm w-100"
+                    data-bs-toggle="collapse" data-bs-target="#returnForm">
+              <i class="bi bi-box-arrow-left me-1"></i>{{ _('page.disk_detail.return_disk') }}
+            </button>
+            <div class="collapse mt-2" id="returnForm">
+              <form method="POST" action="{{ url_for('return_disk', disk_id=disk.id) }}">
+                <div class="mb-2">
+                  <label class="form-label small mb-1">{{ _('page.disk_detail.return_reason') }}</label>
+                  <textarea name="reason" class="form-control form-control-sm" rows="3"
+                            placeholder="{{ _('page.disk_detail.return_reason_ph') }}"></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-outline-secondary btn-sm flex-fill"
+                          data-bs-toggle="collapse" data-bs-target="#returnForm">{{ _('common.cancel') }}</button>
+                  <button type="submit" class="btn btn-warning btn-sm flex-fill"
+                          onclick="return confirm('{{ _('page.disk_detail.confirm_return') }}')">
+                    {{ _('page.disk_detail.confirm_submit') }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 硬盘信息 & 备注 -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>{{ _('page.disk_detail.disk_info') }}</h6>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless small mb-2">
+          <tbody>
+            {% if disk.brand %}
+            <tr><td class="text-muted ps-0" style="width:70px">{{ _('common.brand') }}</td><td>{{ disk.brand }}</td></tr>
+            {% endif %}
+            {% if disk.model_name %}
+            <tr><td class="text-muted ps-0">{{ _('common.model') }}</td><td>{{ disk.model_name }}</td></tr>
+            {% endif %}
+            {% if disk.serial_number %}
+            <tr><td class="text-muted ps-0">S/N</td><td><code>{{ disk.serial_number }}</code></td></tr>
+            {% endif %}
+            {% if disk.part_number %}
+            <tr><td class="text-muted ps-0">P/N</td><td><code>{{ disk.part_number }}</code></td></tr>
+            {% endif %}
+            {% if disk.location %}
+            <tr><td class="text-muted ps-0">{{ _('common.location') }}</td><td>{{ disk.location }}</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+        <div class="small text-muted mb-1">{{ _('page.disk_detail.notes_label') }}</div>
+        <div class="small mb-2">{{ disk.notes or _('page.disk_detail.no_notes') }}</div>
+        {% if can_edit %}
+        <button class="btn btn-outline-secondary btn-sm w-100"
+                data-bs-toggle="collapse" data-bs-target="#notesForm">
+          <i class="bi bi-pencil me-1"></i>{{ _('page.disk_detail.edit_notes') }}
+        </button>
+        <div class="collapse mt-2" id="notesForm">
+          <form method="POST" action="{{ url_for('update_notes', disk_id=disk.id) }}">
+            <textarea name="notes" class="form-control form-control-sm mb-2" rows="3">{{ disk.notes or '' }}</textarea>
+            <button type="submit" class="btn btn-secondary btn-sm w-100">{{ _('page.disk_detail.save_notes') }}</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 右栏：数据条目 + 历史 -->
+  <div class="col-lg-8">
+
+    <!-- 数据条目 -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-database me-2 text-primary"></i>{{ _('page.disk_detail.data_records') }}</h6>
+        {% if can_edit %}
+        <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addDataForm">
+          <i class="bi bi-plus me-1"></i>{{ _('page.disk_detail.add_entry') }}
+        </button>
+        {% endif %}
+      </div>
+
+      {% if can_edit %}
+      <div class="collapse" id="addDataForm">
+        <div class="card-body border-bottom bg-light">
+          <form method="POST" action="{{ url_for('add_data_entry', disk_id=disk.id) }}">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label small mb-1">{{ _('page.disk_detail.path') }}</label>
+                <input type="text" name="data_path" class="form-control form-control-sm font-monospace"
+                       placeholder="/PJ23062901419/">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label small mb-1">{{ _('page.disk_detail.description') }} <span class="text-danger">*</span></label>
+                <input type="text" name="description" class="form-control form-control-sm"
+                       placeholder="{{ _('page.disk_detail.description_ph') }}" required>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">{{ _('page.disk_detail.size_gb') }}</label>
+                <input type="number" step="0.1" name="size_gb" class="form-control form-control-sm" value="0" min="0">
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">{{ _('page.disk_detail.backup_status') }}</label>
+                <select name="backup_status" class="form-select form-select-sm">
+                  {% for k, v in BACKUP_LABELS.items() %}
+                  <option value="{{ k }}" {{ 'selected' if k=='unknown' }}>{{ v }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1">{{ _('page.disk_detail.backup_location') }}</label>
+                <input type="text" name="backup_location" class="form-control form-control-sm font-monospace"
+                       placeholder="课题组服务器/mnt/wanggd_group/fwh/RNA-seq/HMbc18">
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="bi bi-plus me-1"></i>{{ _('page.disk_detail.add_entry') }}
+                </button>
+              </div>
+              <input type="hidden" name="importance" value="normal">
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="card-body p-0">
+        {% if disk.data_entries %}
+        <ul class="list-group list-group-flush">
+          {% for entry in disk.data_entries %}
+          <li class="list-group-item px-3 py-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                {% if entry.data_path %}
+                <code class="text-primary me-2">{{ entry.data_path }}</code>
+                {% endif %}
+                <span class="fw-semibold">{{ entry.description }}</span>
+                {% if entry.size_gb %}
+                <span class="text-muted small ms-2">({{ "%.1f" | format(entry.size_gb) }} GB)</span>
+                {% endif %}
+
+                <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+                  {% set bs = entry.backup_status %}
+                  <span class="badge
+                    {{ 'bg-success' if bs=='backed_up' else 'bg-danger' if bs=='not_backed' else 'bg-light text-dark border' }}">
+                    {{ BACKUP_LABELS.get(bs, bs) }}
+                  </span>
+                  {% if entry.backup_location %}
+                  <span class="small text-muted">
+                    <i class="bi bi-cloud-arrow-up me-1"></i>{{ _('page.disk_detail.backup_at') }}
+                    <code class="text-secondary">{{ entry.backup_location }}</code>
+                  </span>
+                  {% elif bs == 'backed_up' %}
+                  <span class="small text-warning">{{ _('page.disk_detail.backup_no_location') }}</span>
+                  {% endif %}
+                </div>
+
+                <div class="small text-muted mt-1">
+                  {{ _('page.disk_detail.recorded_at', date=entry.created_at.strftime('%Y-%m-%d')) }}
+                </div>
+
+                {% if can_edit %}
+                <button class="btn btn-link btn-sm p-0 mt-1 text-decoration-none"
+                        data-bs-toggle="collapse" data-bs-target="#editBackup{{ entry.id }}">
+                  <i class="bi bi-pencil me-1"></i>{{ _('page.disk_detail.edit_backup') }}
+                </button>
+                <div class="collapse mt-2" id="editBackup{{ entry.id }}">
+                  <form method="POST" action="{{ url_for('update_data_entry', entry_id=entry.id) }}"
+                        class="bg-light rounded p-2">
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <label class="form-label small mb-1">{{ _('page.disk_detail.backup_status') }}</label>
+                        <select name="backup_status" class="form-select form-select-sm">
+                          {% for k, v in BACKUP_LABELS.items() %}
+                          <option value="{{ k }}" {{ 'selected' if entry.backup_status==k }}>{{ v }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-md-8">
+                        <label class="form-label small mb-1">{{ _('page.disk_detail.backup_location') }}</label>
+                        <input type="text" name="backup_location" class="form-control form-control-sm font-monospace"
+                               value="{{ entry.backup_location or '' }}"
+                               placeholder="课题组服务器/mnt/wanggd_group/fwh/RNA-seq/HMbc18">
+                      </div>
+                      <div class="col-12">
+                        <button type="submit" class="btn btn-secondary btn-sm">{{ _('common.save') }}</button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                {% endif %}
+              </div>
+              {% if can_edit %}
+              <form method="POST" action="{{ url_for('delete_data_entry', entry_id=entry.id) }}"
+                    onsubmit="return confirm('{{ _('page.disk_detail.confirm_delete_entry') }}')">
+                <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-database-slash fs-3 d-block mb-2"></i>
+          <small>{{ _('page.disk_detail.no_data_records') }}{% if can_edit %}{{ _('page.disk_detail.no_data_records_hint') }}{% endif %}</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 管理历史 -->
+    {% if disk.history %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>{{ _('page.disk_detail.mgmt_history') }}</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">{{ _('page.disk_detail.mgmt_history.manager') }}</th>
+                <th>{{ _('common.department') }}</th>
+                <th>{{ _('page.disk_detail.mgmt_history.start') }}</th>
+                <th>{{ _('page.disk_detail.mgmt_history.end') }}</th>
+                <th>{{ _('page.disk_detail.mgmt_history.days') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for h in disk.history | sort(attribute='start_date', reverse=True) %}
+              <tr>
+                <td class="ps-3 fw-semibold">
+                  {{ h.manager.display_name if h.manager else _('common.unknown') }}
+                  {% if not h.end_date %}
+                    <span class="badge bg-success ms-1">{{ _('common.current') }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted">{{ h.manager.department if h.manager else '' }}</td>
+                <td>{{ format_date(h.start_date) if h.start_date else _('common.none') }}</td>
+                <td>{{ format_date(h.end_date) if h.end_date else _('common.present') }}</td>
+                <td>
+                  {% if h.start_date %}
+                    {% set end = h.end_date or now.date() %}
+                    {{ (end - h.start_date).days }} {{ _('common.days') }}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 操作日志 -->
+    {% if disk.audit_logs %}
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-journal me-2 text-primary"></i>{{ _('page.disk_detail.audit_log') }}</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">{{ _('common.time') }}</th>
+                <th>{{ _('common.user') }}</th>
+                <th>{{ _('common.action') }}</th>
+                <th>{{ _('common.details') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in disk.audit_logs | sort(attribute='created_at', reverse=True) | list %}
+              <tr>
+                <td class="ps-3 text-muted">{{ format_datetime(log.created_at) }}</td>
+                <td>{{ log.user.display_name if log.user else _('common.system') }}</td>
+                <td><span class="badge bg-primary-subtle text-primary">{{ translate_action(log.action) }}</span></td>
+                <td class="text-muted">{{ translate_audit_details(log.action, log.details) or '' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- 删除确认模态框 -->
+{% if is_admin %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>{{ _('page.disk_detail.confirm_delete_title') }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {{ _('page.disk_detail.confirm_delete_body', number=disk.disk_number) }}
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+        <form method="POST" action="{{ url_for('delete_disk', disk_id=disk.id) }}">
+          <button type="submit" class="btn btn-danger">{{ _('page.disk_detail.confirm_delete_title') }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.admin.users.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<h4 class="fw-bold mb-4"><i class="bi bi-people me-2 text-primary"></i>{{ _('page.admin.users.title') }}</h4>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('common.username') }}</th>
+            <th>{{ _('common.display_name') }}</th>
+            <th>{{ _('common.department') }}</th>
+            <th>{{ _('common.email') }}</th>
+            <th>{{ _('role.admin') }}/{{ _('role.user') }}</th>
+            <th>{{ _('common.managed_disks') }}</th>
+            <th>{{ _('common.registered_at') }}</th>
+            <th class="text-center" style="min-width:200px">{{ _('common.action') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td class="ps-3 fw-semibold">{{ user.username }}</td>
+            <td>{{ user.display_name or _('common.none') }}</td>
+            <td class="text-muted small">{{ user.department or _('common.none') }}</td>
+            <td class="text-muted small">{{ user.email or _('common.none') }}</td>
+            <td>
+              {% if user.role == 'admin' %}
+                <span class="badge bg-warning text-dark">{{ _('role.admin') }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ _('role.user') }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-primary-subtle text-primary">
+                {{ user.disks | length }}
+              </span>
+            </td>
+            <td class="small text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+            <td class="text-center">
+              {% if user.id != session.get('user_id') %}
+              <div class="d-flex justify-content-center gap-1 flex-wrap">
+                <button class="btn btn-outline-secondary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editUserModal{{ user.id }}"
+                        title="{{ _('page.admin.users.edit_info') }}">
+                  <i class="bi bi-pencil"></i> {{ _('common.edit') }}
+                </button>
+
+                <form method="POST" action="{{ url_for('toggle_role', user_id=user.id) }}">
+                  <button type="submit"
+                    class="btn btn-outline-{{ 'secondary' if user.role=='admin' else 'warning' }} btn-sm"
+                    title="{{ _('page.admin.users.revoke_admin') if user.role=='admin' else _('page.admin.users.grant_admin') }}">
+                    <i class="bi bi-{{ 'person-dash' if user.role=='admin' else 'person-check' }}"></i>
+                    {{ _('page.admin.users.revoke_admin') if user.role=='admin' else _('page.admin.users.grant_admin') }}
+                  </button>
+                </form>
+
+                <button class="btn btn-outline-primary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetPwModal{{ user.id }}"
+                        title="{{ _('page.admin.users.reset_password') }}">
+                  <i class="bi bi-key"></i> {{ _('page.admin.users.reset_password') }}
+                </button>
+
+                <button class="btn btn-outline-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteUserModal{{ user.id }}"
+                        title="{{ _('page.admin.users.delete_user') }}">
+                  <i class="bi bi-trash"></i> {{ _('common.delete') }}
+                </button>
+              </div>
+              {% else %}
+                <span class="text-muted small">{{ _('common.current_account') }}
+                  <a href="{{ url_for('change_password') }}" class="ms-1 small">{{ _('nav.change_password') }}</a>
+                </span>
+              {% endif %}
+            </td>
+          </tr>
+
+          {% if user.id != session.get('user_id') %}
+          <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header border-0">
+                  <h6 class="modal-title">
+                    <i class="bi bi-pencil me-2 text-secondary"></i>{{ _('page.admin.users.edit_modal_title') }}
+                  </h6>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
+                  <div class="modal-body">
+                    <p class="small text-muted mb-3">{{ _('page.admin.users.edit_modal_hint', username=user.username) }}</p>
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold">{{ _('page.register.display_name') }} <span class="text-danger">*</span></label>
+                      <input type="text" name="display_name" class="form-control form-control-sm"
+                             value="{{ user.display_name or '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold">{{ _('common.department') }}</label>
+                      <input type="text" name="department" class="form-control form-control-sm"
+                             value="{{ user.department or '' }}" placeholder="{{ _('page.admin.users.dept_ph') }}">
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label small fw-semibold">{{ _('common.email') }}</label>
+                      <input type="email" name="email" class="form-control form-control-sm"
+                             value="{{ user.email or '' }}" placeholder="user@example.com">
+                    </div>
+                  </div>
+                  <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{{ _('page.admin.edit_disk.save') }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if user.id != session.get('user_id') %}
+          <div class="modal fade" id="resetPwModal{{ user.id }}" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+              <div class="modal-content">
+                <div class="modal-header border-0">
+                  <h6 class="modal-title">
+                    <i class="bi bi-key me-2 text-primary"></i>{{ _('page.admin.users.reset_modal_title') }}
+                  </h6>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('reset_password', user_id=user.id) }}">
+                  <div class="modal-body">
+                    <p class="small text-muted">{{ _('page.admin.users.reset_modal_hint', name=user.display_name or user.username) }}</p>
+                    <input type="password" name="new_password" class="form-control form-control-sm"
+                           placeholder="{{ _('page.admin.users.new_password_ph') }}" minlength="6" required>
+                    <div class="form-text mt-1">{{ _('page.admin.users.reset_hint') }}</div>
+                  </div>
+                  <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{{ _('page.admin.users.confirm_reset') }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header border-0">
+                  <h6 class="modal-title text-danger">
+                    <i class="bi bi-person-x me-2"></i>{{ _('page.admin.users.delete_modal_title') }}
+                  </h6>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}">
+                  <div class="modal-body">
+                    <p>{{ _('page.admin.users.delete_confirm', name=user.display_name or user.username) }}</p>
+
+                    {% if user.disks | length > 0 %}
+                    <div class="alert alert-warning py-2 small mb-3">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      {{ _('page.admin.users.manages_disks_warn', count=user.disks | length) }}
+                    </div>
+                    {% endif %}
+
+                    <p class="small text-muted mb-2">{{ _('page.admin.users.data_handling') }}</p>
+
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="radio" name="keep_data"
+                             id="keepData{{ user.id }}" value="1" checked>
+                      <label class="form-check-label" for="keepData{{ user.id }}">
+                        <strong>{{ _('page.admin.users.keep_data') }}</strong>
+                        <div class="text-muted small">
+                          {{ _('page.admin.users.keep_data_desc') }}
+                        </div>
+                      </label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="keep_data"
+                             id="deleteData{{ user.id }}" value="0">
+                      <label class="form-check-label" for="deleteData{{ user.id }}">
+                        <strong class="text-danger">{{ _('page.admin.users.delete_data') }}</strong>
+                        <div class="text-muted small">
+                          {{ _('page.admin.users.delete_data_desc') }}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+                    <button type="submit" class="btn btn-danger btn-sm">{{ _('page.admin.users.confirm_delete') }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

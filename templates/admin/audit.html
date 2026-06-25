@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.admin.audit.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <h4 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-primary"></i>{{ _('page.admin.audit.title') }}</h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('export_audit') }}" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-download me-1"></i>{{ _('common.export_csv') }}
+    </a>
+    <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#clearAuditModal">
+      <i class="bi bi-trash me-1"></i>{{ _('page.admin.audit.clear') }}
+    </button>
+  </div>
+</div>
+
+<div class="modal fade" id="clearAuditModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h6 class="modal-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>{{ _('page.admin.audit.clear_title') }}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small">{{ _('page.admin.audit.clear_body') }}</p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+        <form method="POST" action="{{ url_for('clear_audit') }}" class="d-inline">
+          <button type="submit" class="btn btn-danger btn-sm">{{ _('page.admin.audit.confirm_clear') }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 small align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('common.time') }}</th>
+            <th>{{ _('common.user') }}</th>
+            <th>{{ _('common.disk') }}</th>
+            <th>{{ _('common.action') }}</th>
+            <th>{{ _('common.details') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs.items %}
+          <tr>
+            <td class="ps-3 text-muted">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td class="fw-semibold">{{ log.user.display_name if log.user else _('common.system') }}</td>
+            <td>
+              {% if log.disk %}
+              <a href="{{ url_for('disk_detail', disk_id=log.disk_id) }}"
+                 class="text-decoration-none">{{ log.disk.disk_number }}</a>
+              {% else %}{{ _('common.none') }}{% endif %}
+            </td>
+            <td><span class="badge bg-primary-subtle text-primary">{{ translate_action(log.action) }}</span></td>
+            <td class="text-muted">{{ translate_audit_details(log.action, log.details) or _('common.none') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if logs.pages > 1 %}
+  <div class="card-footer bg-transparent">
+    <nav>
+      <ul class="pagination pagination-sm mb-0 justify-content-center">
+        {% if logs.has_prev %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('audit_log', page=logs.prev_num) }}">{{ _('common.prev_page') }}</a>
+        </li>
+        {% endif %}
+        {% for p in logs.iter_pages() %}
+          {% if p %}
+          <li class="page-item {{ 'active' if p==logs.page }}">
+            <a class="page-link" href="{{ url_for('audit_log', page=p) }}">{{ p }}</a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        {% if logs.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('audit_log', page=logs.next_num) }}">{{ _('common.next_page') }}</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.admin.requests.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<h4 class="fw-bold mb-4">
+  <i class="bi bi-bell me-2 text-primary"></i>{{ _('page.admin.requests.title') }}
+</h4>
+
+<div class="btn-group mb-4" role="group">
+  {% for val, label in [
+    ('pending', _('request_status.pending')),
+    ('approved', _('request_status.approved')),
+    ('rejected', _('request_status.rejected')),
+    ('all', _('common.all'))
+  ] %}
+  <a href="{{ url_for('admin_requests', status=val) }}"
+     class="btn btn-{{ 'primary' if status_filter==val else 'outline-secondary' }} btn-sm">
+    {{ label }}
+    {% if val == 'pending' %}
+      {% set pc = pending_count() %}
+      {% if pc > 0 %}<span class="badge bg-danger ms-1">{{ pc }}</span>{% endif %}
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+{% if requests %}
+<div class="row g-3">
+  {% for req in requests %}
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100
+      {{ 'border-start border-4 border-warning' if req.status=='pending' else '' }}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h6 class="fw-bold mb-1">
+              {% if req.request_type == 'return' %}
+                <span class="badge bg-orange text-dark me-1" style="background-color:#fd7e14">{{ _('request_type.return_short') }}</span>
+              {% else %}
+                <span class="badge bg-primary-subtle text-primary me-1">{{ _('request_type.manage') }}</span>
+              {% endif %}
+              <a href="{{ url_for('disk_detail', disk_id=req.disk_id) }}" class="text-decoration-none">
+                {{ req.disk.disk_number }}
+              </a>
+            </h6>
+            <small class="text-muted">
+              {{ req.disk.location or '' }}
+              {% if req.disk.location and req.disk.disk_type %} · {% endif %}
+              {{ req.disk.disk_type }}
+            </small>
+          </div>
+          {% if req.status == 'pending' %}
+            <span class="badge bg-warning text-dark">{{ _('request_status.pending') }}</span>
+          {% elif req.status == 'approved' %}
+            <span class="badge bg-success">{{ _('request_status.approved') }}</span>
+          {% else %}
+            <span class="badge bg-danger">{{ _('request_status.rejected') }}</span>
+          {% endif %}
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="avatar-circle bg-primary-subtle text-primary fw-bold small">
+            {{ (req.requester.display_name or req.requester.username)[0] | upper }}
+          </div>
+          <div>
+            <div class="fw-semibold small">{{ req.requester.display_name or req.requester.username }}</div>
+            <div class="text-muted" style="font-size:0.75rem">
+              {{ req.requester.department or '' }}
+              {% if req.requester.email %} · {{ req.requester.email }}{% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% if req.reason %}
+        <div class="bg-light rounded p-2 small mb-2">
+          <i class="bi bi-chat-left-text me-1 text-muted"></i>
+          <em>{{ req.reason }}</em>
+        </div>
+        {% endif %}
+
+        {% if req.disk.manager %}
+        <div class="small text-muted mb-2">
+          <i class="bi bi-person me-1"></i>{{ _('page.admin.requests.current_manager', name=req.disk.manager.display_name or req.disk.manager.username) }}
+        </div>
+        {% endif %}
+
+        <div class="small text-muted mb-3">
+          <i class="bi bi-clock me-1"></i>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}
+        </div>
+
+        {% if req.admin_note %}
+        <div class="alert alert-light py-2 small mb-3">
+          <i class="bi bi-person-check me-1"></i><strong>{{ _('page.admin.requests.admin_note') }}</strong>{{ translate_admin_note(req.admin_note) }}
+        </div>
+        {% endif %}
+
+        {% if req.status == 'pending' %}
+        <div class="row g-2">
+          <div class="col-6">
+            <button class="btn btn-success btn-sm w-100"
+                    data-bs-toggle="modal" data-bs-target="#approveModal{{ req.id }}">
+              <i class="bi bi-check-lg me-1"></i>{{ _('page.admin.requests.approve') }}
+            </button>
+          </div>
+          <div class="col-6">
+            <button class="btn btn-outline-danger btn-sm w-100"
+                    data-bs-toggle="modal" data-bs-target="#rejectModal{{ req.id }}">
+              <i class="bi bi-x-lg me-1"></i>{{ _('page.admin.requests.reject') }}
+            </button>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="approveModal{{ req.id }}" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-success">
+            <i class="bi bi-check-circle me-2"></i>{{ _('page.admin.requests.approve_title') }}
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="POST" action="{{ url_for('approve_request', req_id=req.id) }}">
+          <div class="modal-body">
+            {% if req.request_type == 'return' %}
+              <p>{{ _('page.admin.requests.approve_return', user=req.requester.display_name or req.requester.username, disk=req.disk.disk_number) }}</p>
+              <p class="text-warning small">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ _('page.admin.requests.approve_return_warn') }}
+              </p>
+            {% else %}
+              <p>{{ _('page.admin.requests.approve_manage', disk=req.disk.disk_number, user=req.requester.display_name or req.requester.username) }}</p>
+              {% if req.disk.manager %}
+              <p class="text-warning small">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ _('page.admin.requests.approve_manage_warn', name=req.disk.manager.display_name or req.disk.manager.username) }}
+              </p>
+              {% endif %}
+            {% endif %}
+            <div class="mb-0">
+              <label class="form-label small">{{ _('page.admin.requests.approval_note') }}</label>
+              <textarea name="admin_note" class="form-control" rows="2"
+                        placeholder="{{ _('page.admin.requests.approval_note_ph') }}"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+            <button type="submit" class="btn btn-success btn-sm">{{ _('page.admin.requests.confirm_approve') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="rejectModal{{ req.id }}" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-danger">
+            <i class="bi bi-x-circle me-2"></i>{{ _('page.admin.requests.reject_title') }}
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="POST" action="{{ url_for('reject_request', req_id=req.id) }}">
+          <div class="modal-body">
+            <div class="mb-0">
+              <label class="form-label small">{{ _('page.admin.requests.reject_reason') }}</label>
+              <textarea name="admin_note" class="form-control" rows="2"
+                        placeholder="{{ _('page.admin.requests.reject_reason_ph') }}"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ _('common.cancel') }}</button>
+            <button type="submit" class="btn btn-danger btn-sm">{{ _('page.admin.requests.confirm_reject') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+  <h5>{{ _('page.admin.requests.empty_pending') if status_filter == 'pending' else _('page.admin.requests.empty') }}</h5>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('nav.add_disk') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-transparent border-0">
+        <h5 class="fw-bold mb-0"><i class="bi bi-plus-circle me-2 text-primary"></i>{{ _('page.admin.add_disk.title') }}</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="row g-3">
+
+            <div class="col-12"><h6 class="text-muted fw-semibold border-bottom pb-2">{{ _('page.admin.add_disk.basic_info') }}</h6></div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.disk_id') }} <span class="text-danger">*</span></label>
+              <input type="text" name="disk_number" class="form-control" required
+                     placeholder="{{ _('page.admin.add_disk.disk_id_ph') }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ _('common.type') }}</label>
+              <select name="disk_type" class="form-select">
+                <option value="HDD">{{ _('disk_type.hdd') }}</option>
+                <option value="SSD">{{ _('disk_type.ssd') }}</option>
+                <option value="NVMe">NVMe</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ _('common.status') }}</label>
+              <select name="status" class="form-select">
+                <option value="idle">{{ _('status.idle') }}</option>
+                <option value="active">{{ _('status.active') }}</option>
+                <option value="maintenance">{{ _('status.maintenance') }}</option>
+                <option value="faulty">{{ _('status.faulty') }}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.total_gb') }}</label>
+              <input type="number" step="0.1" name="total_space_gb" class="form-control"
+                     value="0" min="0" placeholder="2000">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.used_gb') }}</label>
+              <input type="number" step="0.1" name="used_space_gb" class="form-control"
+                     value="0" min="0">
+            </div>
+
+            <div class="col-12"><h6 class="text-muted fw-semibold border-bottom pb-2 mt-2">{{ _('page.admin.add_disk.identity') }}</h6></div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('common.brand') }}</label>
+              <input type="text" name="brand" class="form-control"
+                     placeholder="{{ _('page.admin.add_disk.brand_ph') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('common.model') }}</label>
+              <input type="text" name="model_name" class="form-control"
+                     placeholder="{{ _('page.admin.add_disk.model_ph') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.sn') }}</label>
+              <input type="text" name="serial_number" class="form-control font-monospace"
+                     placeholder="{{ _('page.admin.add_disk.sn_ph') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.pn') }}</label>
+              <input type="text" name="part_number" class="form-control font-monospace"
+                     placeholder="{{ _('page.admin.add_disk.pn_ph') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ _('page.admin.add_disk.location') }}</label>
+              <input type="text" name="location" class="form-control"
+                     placeholder="{{ _('page.admin.add_disk.location_ph') }}">
+            </div>
+
+            <div class="col-12"><h6 class="text-muted fw-semibold border-bottom pb-2 mt-2">{{ _('common.notes') }}</h6></div>
+            <div class="col-12">
+              <textarea name="notes" class="form-control" rows="2"
+                        placeholder="{{ _('page.admin.add_disk.notes_ph') }}"></textarea>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>{{ _('nav.add_disk') }}
+            </button>
+            <a href="{{ url_for('disks') }}" class="btn btn-outline-secondary">{{ _('common.cancel') }}</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

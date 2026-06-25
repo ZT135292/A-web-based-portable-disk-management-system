@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ _('page.register.title') }} - {{ _('app.name_short') }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-md-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-5">
+        <div class="text-center mb-4">
+          <i class="bi bi-person-plus-fill text-primary" style="font-size:2.5rem"></i>
+          <h3 class="mt-2 fw-bold">{{ _('page.register.title') }}</h3>
+        </div>
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ _('common.username') }} <span class="text-danger">*</span></label>
+            <input type="text" name="username" class="form-control" required autofocus
+                   placeholder="{{ _('page.register.username_hint') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ _('page.register.display_name') }} <span class="text-danger">*</span></label>
+            <input type="text" name="display_name" class="form-control" required
+                   placeholder="{{ _('page.register.display_name_ph') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ _('common.email') }}</label>
+            <input type="email" name="email" class="form-control" placeholder="{{ _('common.optional') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ _('page.register.department') }}</label>
+            <input type="text" name="department" class="form-control" placeholder="{{ _('common.optional') }}">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">{{ _('common.password') }} <span class="text-danger">*</span></label>
+            <input type="password" name="password" class="form-control" required minlength="6">
+            <div class="form-text">{{ _('page.register.password_hint') }}</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+            <i class="bi bi-person-check me-1"></i>{{ _('page.register.submit') }}
+          </button>
+        </form>
+        <hr>
+        <div class="text-center">
+          <a href="{{ url_for('login') }}" class="small">← {{ _('common.back_login') }}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
