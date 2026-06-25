@@ -59,6 +59,27 @@ python app.py
 
 > ⚠️ 首次登录后请立即在「修改密码」页面更换密码。
 
+### Windows 部署
+
+```bat
+:: 1. 安装依赖
+pip install -r requirements.txt
+
+:: 2. 启动服务
+python app.py
+```
+
+访问 `http://localhost:5000` 或 `http://<本机IP>:5000`
+
+**开机自启（可选）**：将以下内容保存为 `start.bat`，放入 Windows 启动文件夹
+（`Win+R` 输入 `shell:startup` 打开）：
+
+```bat
+@echo off
+cd /d J:\disk_manager
+start /min python app.py
+```
+
 ### Linux 服务器部署
 
 ```bash
@@ -71,6 +92,27 @@ nohup python app.py > disk_manager.log 2>&1 &
 # 或使用 gunicorn（推荐生产环境）
 pip install gunicorn
 gunicorn -w 2 -b 0.0.0.0:5000 app:app
+```
+
+**systemd 服务（开机自启）**：创建 `/etc/systemd/system/disk_manager.service`：
+
+```ini
+[Unit]
+Description=disk_manager
+After=network.target
+
+[Service]
+WorkingDirectory=/path/to/disk_manager
+ExecStart=/usr/bin/python app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl enable disk_manager
+systemctl start disk_manager
 ```
 
 ### 修改端口
@@ -154,4 +196,4 @@ disk_manager/
 
 ## License
 
-MIT License — free to use, modify and distribute.
+[Mozilla Public License 2.0](LICENSE)
