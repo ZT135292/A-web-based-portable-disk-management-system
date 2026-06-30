@@ -88,7 +88,7 @@ pip install -r requirements.txt
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-在项目目录下新建 `.env` 文件，将生成的密钥填入（此文件已被 `.gitignore` 忽略，不会上传到 Git）：
+在项目目录下新建 `.env` 文件，将生成的密钥填入：
 
 ```
 SECRET_KEY=粘贴你生成的随机密钥
@@ -269,7 +269,7 @@ app.run(host='0.0.0.0', port=5000, debug=False)
 
 #### 配置 SECRET_KEY（必须设置，否则无法启动）
 
-`SECRET_KEY` 用于保护登录会话，必须通过 `.env` 文件或环境变量提供，**不要写入源码或上传到 Git**。
+`SECRET_KEY` 用于保护登录会话，必须通过 `.env` 文件或环境变量提供，**不要写入源码或上传到网络**。
 
 生成一个安全的随机密钥：
 
