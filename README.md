@@ -35,44 +35,94 @@
 - **历史记录**：管理员变更历史、完整操作日志
 - **多语言**：支持中文 / English 切换（页面右上角）
 
-### 快速开始
+---
 
-**1. 安装依赖**
+## 安装方法
 
-```bash
-pip install -r requirements.txt
-```
+### 环境要求
 
-**2. 启动服务**
+| 项目 | 要求 |
+|------|------|
+| Python | **3.8 或更高版本** |
+| pip | 随 Python 附带，无需单独安装 |
+| 操作系统 | Windows 7+ / Linux / macOS |
+| 网络端口 | 默认使用 **5000**（可修改） |
 
-```bash
-python app.py
-```
+> 检查 Python 版本：在命令行运行 `python --version`
 
-默认监听 `0.0.0.0:5000`，内网所有机器均可访问：`http://<服务器IP>:5000`
+---
 
-**3. 默认管理员账户**
+### Windows 安装
 
-| 用户名 | 密码      |
-|--------|-----------|
-| admin  | admin123  |
+#### 第一步：确认 Python 已安装
 
-> ⚠️ 首次登录后请立即在「修改密码」页面更换密码。
-
-### Windows 部署
+打开「命令提示符」（Win+R 输入 `cmd`），运行：
 
 ```bat
-:: 1. 安装依赖
-pip install -r requirements.txt
+python --version
+```
 
-:: 2. 启动服务
+如果提示"不是内部或外部命令"，请前往 [python.org](https://www.python.org/downloads/) 下载安装，**安装时勾选"Add Python to PATH"**。
+
+#### 第二步：安装依赖包
+
+在命令提示符中进入项目文件夹：
+
+```bat
+cd /d J:\disk_manager
+pip install -r requirements.txt
+```
+
+> 如果 pip 下载缓慢，可切换国内镜像：
+> ```bat
+> pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+> ```
+
+#### 第三步：启动服务
+
+```bat
 python app.py
 ```
 
-访问 `http://localhost:5000` 或 `http://<本机IP>:5000`
+看到类似以下输出即表示启动成功：
 
-**开机自启（可选）**：将以下内容保存为 `start.bat`，放入 Windows 启动文件夹
-（`Win+R` 输入 `shell:startup` 打开）：
+```
+[初始化] 创建默认管理员账户: admin / admin123
+ * Running on http://0.0.0.0:5000
+```
+
+#### 第四步：访问系统
+
+打开浏览器，访问：
+
+- 本机访问：`http://localhost:5000`
+- 局域网其他电脑访问：`http://<本机IP>:5000`
+
+> 查看本机 IP：在命令提示符运行 `ipconfig`，找到"IPv4 地址"
+
+#### 第五步：首次登录
+
+| 用户名 | 密码 |
+|--------|------|
+| `admin` | `admin123` |
+
+> **重要**：首次登录后请立即在右上角「修改密码」中更换默认密码！
+
+---
+
+### Windows 开机自启（可选）
+
+项目提供了两种开机自启方式：
+
+#### 方式一：使用已有的 VBS 脚本（推荐，无黑窗口）
+
+项目根目录已包含 `start_server.vbs`，双击即可在后台静默启动服务（不弹出命令窗口）。
+
+将其设为开机自启：按 `Win+R` 输入 `shell:startup` 打开启动文件夹，将 `start_server.vbs` 的**快捷方式**复制进去即可。
+
+#### 方式二：使用 BAT 脚本
+
+新建 `start.bat`，写入以下内容：
 
 ```bat
 @echo off
@@ -80,50 +130,147 @@ cd /d J:\disk_manager
 start /min python app.py
 ```
 
-### Linux 服务器部署
+同样复制快捷方式到 `shell:startup` 启动文件夹。
+
+#### 方式三：Windows 任务计划程序（最稳定）
+
+1. 按 `Win+S` 搜索「任务计划程序」并打开
+2. 右侧点击「创建任务」
+3. 「常规」选项卡：名称填 `disk_manager`，勾选「不管用户是否登录都要运行」
+4. 「触发器」→ 新建 → 开始任务选「启动时」
+5. 「操作」→ 新建：
+   - 程序：`python`
+   - 参数：`app.py`
+   - 起始于：`J:\disk_manager`
+6. 点击确定并输入管理员密码保存
+
+---
+
+### Linux 服务器安装
+
+#### 第一步：安装依赖
 
 ```bash
-# 安装依赖
+cd /path/to/disk_manager
 pip install -r requirements.txt
-
-# 后台运行
-nohup python app.py > disk_manager.log 2>&1 &
-
-# 或使用 gunicorn（推荐生产环境）
-pip install gunicorn
-gunicorn -w 2 -b 0.0.0.0:5000 app:app
 ```
 
-**systemd 服务（开机自启）**：创建 `/etc/systemd/system/disk_manager.service`：
+#### 第二步：启动方式
+
+**临时运行（测试用）：**
+
+```bash
+python app.py
+```
+
+**后台持续运行（推荐）：**
+
+```bash
+nohup python app.py > disk_manager.log 2>&1 &
+echo $! > disk_manager.pid   # 保存进程号，方便后续停止
+```
+
+停止服务：
+
+```bash
+kill $(cat disk_manager.pid)
+```
+
+**使用 gunicorn（生产环境推荐）：**
+
+```bash
+pip install gunicorn
+gunicorn -w 2 -b 0.0.0.0:5000 --access-logfile access.log app:app
+```
+
+#### 第三步：systemd 开机自启
+
+创建服务文件 `/etc/systemd/system/disk_manager.service`：
 
 ```ini
 [Unit]
-Description=disk_manager
+Description=移动硬盘管理系统
 After=network.target
 
 [Service]
+User=www-data
 WorkingDirectory=/path/to/disk_manager
-ExecStart=/usr/bin/python app.py
-Restart=always
+ExecStart=/usr/bin/python3 app.py
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+> 将 `/path/to/disk_manager` 替换为项目实际路径，`User` 改为实际运行用户。
+
+启用并启动服务：
+
 ```bash
-systemctl enable disk_manager
-systemctl start disk_manager
+sudo systemctl daemon-reload
+sudo systemctl enable disk_manager
+sudo systemctl start disk_manager
+
+# 查看运行状态
+sudo systemctl status disk_manager
 ```
 
-### 修改端口
+---
 
-编辑 `app.py` 最后一行：
+### 配置说明
+
+#### 修改端口
+
+编辑 `app.py` 最后一行，将 `5000` 改为所需端口：
 
 ```python
 app.run(host='0.0.0.0', port=5000, debug=False)
 ```
 
-将 `5000` 改为所需端口号。
+#### 修改 SECRET_KEY（正式上线必做）
+
+默认的 `SECRET_KEY` 硬编码在源码中，正式部署时应通过环境变量覆盖：
+
+**Windows（命令提示符）：**
+
+```bat
+set SECRET_KEY=你的随机密钥字符串
+python app.py
+```
+
+**Linux：**
+
+```bash
+export SECRET_KEY=你的随机密钥字符串
+python app.py
+```
+
+生成一个安全的随机密钥：
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+#### 数据库位置
+
+数据库文件为 `instance/disk_manager.db`（SQLite），首次运行自动创建，**请定期备份此文件**。
+
+---
+
+### 常见问题
+
+**Q：pip install 报错"找不到命令"？**
+> 尝试 `python -m pip install -r requirements.txt`
+
+**Q：启动后浏览器无法访问？**
+> 检查 Windows 防火墙是否放行了 5000 端口：控制面板 → Windows Defender 防火墙 → 高级设置 → 入站规则 → 新建规则 → 端口 → TCP 5000。
+
+**Q：局域网其他电脑访问不了？**
+> 确认服务监听的是 `0.0.0.0`（而非 `127.0.0.1`），并确认防火墙已开放端口。
+
+**Q：忘记管理员密码怎么办？**
+> 删除 `instance/disk_manager.db` 文件后重启服务，系统会重新初始化并创建默认账户 `admin / admin123`（**注意：此操作会清空所有数据**）。
 
 ---
 
@@ -144,17 +291,27 @@ app.run(host='0.0.0.0', port=5000, debug=False)
 
 ### Quick Start
 
+**Requirements:** Python 3.8+
+
 ```bash
-# Install dependencies
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# Run
+# 2. Start the server
 python app.py
 ```
 
-Access at `http://<server-ip>:5000`
+Access at `http://localhost:5000` (local) or `http://<server-ip>:5000` (LAN).
 
 Default admin credentials: **admin / admin123** — change immediately after first login.
+
+**Run in background (Linux):**
+
+```bash
+nohup python app.py > disk_manager.log 2>&1 &
+```
+
+**Windows silent start (no console window):** double-click `start_server.vbs`.
 
 ---
 
