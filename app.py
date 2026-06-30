@@ -20,7 +20,14 @@ from i18n import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'b23dde06396027af892e930fec0d031a5eda0aea3e90b564d4aeb0d73fbec783')
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    raise RuntimeError(
+        '未设置 SECRET_KEY 环境变量。'
+        '请运行：set SECRET_KEY=<你的随机密钥>  然后再启动服务。'
+        '生成密钥：python -c "import secrets; print(secrets.token_hex(32))"'
+    )
+app.secret_key = _secret_key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///disk_manager.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
